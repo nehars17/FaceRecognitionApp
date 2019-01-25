@@ -3,7 +3,7 @@ from botocore.exceptions import ClientError
 import base64
 from flask import jsonify
 
-ID = 'face_recognition_app'
+ID = '<YOUR_COLLECTION_ID>'
 AWS_KEY = '<YOUR_AWS_KEY>'
 AWS_SECRET = '<YOUR_AWS_SECRET_KEY>'
 
