@@ -3,69 +3,54 @@ from botocore.exceptions import ClientError
 import base64
 from flask import jsonify
 
-ID = '<YOUR_COLLECTION_ID>'
-AWS_KEY = '<YOUR_AWS_KEY>'
-AWS_SECRET = '<YOUR_AWS_SECRET_KEY>'
+COLLECTION_ID = 'my-collection'
+AWS_KEY = ''
+AWS_SECRET = ''
 
+#command to create rekognition collection id
+#aws rekognition create-collection --collection-id my-collection --region ap-southeast-2
 
 def upload_face(name, image):
-    # --- use this for named profiles in ~/.aws/config file
-    dev = boto3.session.Session(profile_name='personal-aws')
-
-    # --- or use keys
-    # dev = boto3.session.Session(aws_access_key_id=AWS_KEY, aws_secret_access_key=AWS_SECRET)
+    # Initialize Rekognition client
+    dev = boto3.session.Session(profile_name='default')
     dev_client = dev.client('rekognition', region_name='ap-southeast-2')
 
     try:
-
         response = dev_client.index_faces(
-            CollectionId=ID,
-            Image={
-                'Bytes': base64.b64decode(image),
-            },
+            CollectionId=COLLECTION_ID,
+            Image={'Bytes': image},  # Assuming image is a byte stream
             ExternalImageId=name,
         )
 
-        if len(response['FaceRecords']) == 0:
-            return jsonify({'message': 'No face detected in photo!'})
+        if not response.get('FaceRecords'):
+            return {'message': 'No face detected in photo!'}
 
-        if response['FaceRecords'][0]['Face']['FaceId'] is not None:
-            return jsonify({'message': 'Face Uploaded!'})
+        return {'message': 'Face Uploaded!', 'FaceId': response['FaceRecords'][0]['Face']['FaceId']}
 
     except ClientError as e:
+        return {'message': e.response['Error']['Message']}
 
-        return jsonify({'message': e.response['Error']['Message']})
 
 
-def facial_recognition(image):
-    # -- named profile
-    dev = boto3.session.Session(profile_name='personal-aws')
-
-    # dev = boto3.session.Session(aws_access_key_id=AWS_KEY, aws_secret_access_key=AWS_SECRET)
+def facial_recognition(id_image_bytes, live_image_bytes):
+    # Initialize Rekognition client
+    dev = boto3.session.Session(profile_name='default')
     dev_client = dev.client('rekognition', region_name='ap-southeast-2')
 
     try:
-        response = dev_client.search_faces_by_image(
-            CollectionId=ID,
-            Image={
-                'Bytes': base64.b64decode(image),
-            },
-            MaxFaces=1,
+        # Compare images
+        response = dev_client.compare_faces(
+            SourceImage={"Bytes": id_image_bytes},
+            TargetImage={"Bytes": live_image_bytes},
+            SimilarityThreshold=95
         )
 
-        if len(response['FaceMatches']) > 1:
-            return jsonify({'message': 'Too many faces found'})
-
-        elif len(response['FaceMatches']) == 0:
-            return jsonify({'message': 'No face match!'})
-
-        elif len(response['FaceMatches']) == 1:
-            return jsonify({
-                'message': 'Face Found!',
-                'id': response['FaceMatches'][0]['Face']['ExternalImageId'],
-                'confidence': response['FaceMatches'][0]['Face']['Confidence']
-            })
+        if response.get("FaceMatches"):
+            similarity = response["FaceMatches"][0]["Similarity"]
+            return {'message': f"Match found! Similarity: {similarity}%"}
+        else:
+            return {'message': "No match found."}
 
     except ClientError as e:
+        return {'message': e.response['Error']['Message']}
 
-        return jsonify({'message': e.response['Error']['Message']})
