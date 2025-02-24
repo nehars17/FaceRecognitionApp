@@ -35,36 +35,59 @@ def upload_file():
         return jsonify({'message': f"Error: {str(e)}"}), 500
 
 
+
 @app.route('/compare', methods=['POST'])
 def compare_image():
-    status="unverified"
+    status = "Unverified"
     try:
-        data = request.json
-        if "file" not in data:
-            return jsonify({'message': 'Missing file'}), 400
+        # Add print statements before every critical action
+        print("Checking if both images are uploaded...")
 
-        live_image = base64.b64decode(data['file'].split(',')[1])
+        # Ensure both images are uploaded
+        if "file" not in request.files or "id_image" not in request.files:
+            print("No file part")
+            return jsonify({"error": "Both live image and ID image are required"}), 400
 
-        with open("sg-nric.jpg", "rb") as id_file:
-            id_image_bytes = id_file.read()
+        # Retrieve images from request
+        print("Retrieving live and ID images...")
+        live_image = request.files['file'].read()
+        id_image_bytes = request.files['id_image'].read()
 
-        response = facial_recognition(id_image_bytes, live_image)
-        response2 = detect_text(id_image_bytes)
-        print(response2)
+        print(f"Live Image: {len(live_image)} bytes")
+        print(f"ID Image: {len(id_image_bytes)} bytes")
+
+        # Perform face recognition
+        print("Performing face recognition...")
+        face_match = facial_recognition(id_image_bytes, live_image)
+
+        # Perform text detection on ID image
+        print("Detecting text in ID image...")
+        detected_text = detect_text(id_image_bytes)
+        print(f"Detected Text: {detected_text}")
+
+        # Validate detected text with expected details
+        print("Validating detected text...")
         count = len(details)
         for key in details:
-            if details[key] in response2:
-                count-=1
+            if details[key] in detected_text:
+                count -= 1
 
-        if count==0:
-            status="details verified"
-        print(status)
-        return jsonify(response)
+        if count == 0 and 'Match found!' in face_match['message']:
+            status = "Verified"
+
+        print(f"Verification status: {status}")
+
+        # Return structured JSON response
+        print(face_match)
+        return jsonify({
+            "status": status,
+            "face_match": face_match,
+            "detected_text": detected_text
+        })
 
     except Exception as e:
-        print(f"Error in /compare: {e}")  # Log the error
-        return jsonify({'message': f"Error: {str(e)}"}), 500
-
+        print(f"Error in /compare: {e}")
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
