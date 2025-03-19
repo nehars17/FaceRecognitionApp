@@ -25,7 +25,7 @@ def detect_text(image_bytes):
 # Example usage
 if __name__ == "__main__":
     # Read the image file
-    with open("sg-nric.jpg", "rb") as image_file:
+    with open("ID.png", "rb") as image_file:
         image_bytes = image_file.read()
 
     # Detect text in the image

@@ -3,7 +3,7 @@ from botocore.exceptions import ClientError
 import base64
 from flask import jsonify
 
-COLLECTION_ID = 'my-collection'
+COLLECTION_ID = 'clientverificationcollection'
 AWS_KEY = ''
 AWS_SECRET = ''
 
@@ -13,7 +13,7 @@ AWS_SECRET = ''
 def upload_face(name, image):
     # Initialize Rekognition client
     dev = boto3.session.Session(profile_name='default')
-    dev_client = dev.client('rekognition', region_name='ap-southeast-2')
+    dev_client = dev.client('rekognition', region_name='ap-southeast-1')
 
     try:
         response = dev_client.index_faces(
@@ -53,4 +53,3 @@ def facial_recognition(id_image_bytes, live_image_bytes):
 
     except ClientError as e:
         return {'message': e.response['Error']['Message']}
-

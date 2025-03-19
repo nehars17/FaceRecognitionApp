@@ -1,21 +1,23 @@
 from flask import Flask, request, render_template, jsonify
+from flask_cors import CORS  # Import CORS
 import base64
 import os
 from face import upload_face, facial_recognition
 from ocr import *
-UPLOAD_FOLDER = '/static/img/'
 
 app = Flask(__name__)
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.secret_key = '<SOMETHING_SUPER_SECRET>'
+CORS(app)  # Enable CORS for all routes
 
-
-details={"name":"NEHA D/O RAM SINGASAN", "Date of birth":"07-07-2003", "Country": "SINGAPORE", "Sex":"F"}
+details = {
+    "name": "NEHA D/O RAM SINGASAN",
+    "Date of birth": "07-07-2003",
+    "Country": "SINGAPORE",
+    "Sex": "F"
+}
 
 @app.route('/')
 def home():
     return render_template('index.html')
-
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -33,8 +35,12 @@ def upload_file():
 
     except Exception as e:
         return jsonify({'message': f"Error: {str(e)}"}), 500
-
-
+# Function to decode Base64 to image
+def decode_base64_to_image(base64_data):
+    # Strip out the base64 metadata prefix if it exists
+    base64_str = base64_data.split(',')[1] if ',' in base64_data else base64_data
+    image_data = base64.b64decode(base64_str)
+    return image_data
 
 @app.route('/compare', methods=['POST'])
 def compare_image():
@@ -53,12 +59,14 @@ def compare_image():
         live_image = request.files['file'].read()
         id_image_bytes = request.files['id_image'].read()
 
-        print(f"Live Image: {len(live_image)} bytes")
-        print(f"ID Image: {len(id_image_bytes)} bytes")
+        # Decode base64 to raw bytes
+        # live_image_bytes = base64.b64decode(live_image.split(',')[1])  # Remove data URL prefix if present
+        # id_image_bytes = base64.b64decode(id_image.split(',')[1])
+
 
         # Perform face recognition
         print("Performing face recognition...")
-        face_match = facial_recognition(id_image_bytes, live_image)
+        face_match = facial_recognition(live_image, id_image_bytes)
 
         # Perform text detection on ID image
         print("Detecting text in ID image...")
