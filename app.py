@@ -9,10 +9,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 details = {
-    "name": "NEHA D/O RAM SINGASAN",
-    "Date of birth": "07-07-2003",
-    "Country": "SINGAPORE",
-    "Sex": "F"
+   #details
 }
 
 @app.route('/')
